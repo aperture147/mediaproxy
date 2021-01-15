@@ -44,7 +44,7 @@ func TestImageProcessor(t *testing.T) {
 func TestImageProcessorInterrupted(t *testing.T) {
 
 	p := NewImageProcessor(context.Background(), ImageProcessorOptions{
-		MaxImageSize: 100,
+		MaxImageSize: 3840 * 1.5,
 	})
 
 	p.Start()
