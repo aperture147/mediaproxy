@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/discord/lilliput"
 	"log"
-	"math"
 )
 
 const (
@@ -33,104 +32,6 @@ const (
 	ImageTypePng  ImageType = ".png"
 	ImageTypeWebp ImageType = ".webp"
 )
-
-type ImageQuality string
-
-const (
-	ImageQualityAvatar       ImageQuality = "avatar"       // use for avatar upload, small scaled
-	ImageQualityOrganization ImageQuality = "organization" // use for upload organization image, crop down to the largest size available
-	ImageQualityDefault      ImageQuality = "default"      // default upload option
-	ImageQualityCustom       ImageQuality = "custom"       // custom defined image options
-)
-
-func NormalizeSizeByScaleFactor(origWidth, origHeight, maxSize int, scaleFactor float64) (int, int, error) {
-	divisor := float64(maxSize) * scaleFactor
-	floatWidth, floatHeight := float64(origWidth), float64(origHeight)
-	ratio := math.Max(floatWidth/divisor, floatHeight/divisor)
-	newWidth, newHeight := floatWidth/ratio, floatHeight/ratio
-	if IsSizeValidFloat64(newWidth, newHeight, float64(maxSize), scaleFactor) {
-		return int(newWidth), int(newHeight), nil
-	}
-	return 0, 0, errors.New("image too large")
-}
-
-// This function is called on function that doesnt casting width height to other number type
-func IsSizeValidInt(width, height, maxSize int, scaleFactor float64) bool {
-	return (float64(width)/float64(maxSize)/scaleFactor <= 0.8) || (float64(height)/float64(maxSize)/scaleFactor <= 0.8)
-}
-
-func IsSizeValidFloat64(width, height, maxSize, scaleFactor float64) bool {
-	return (width/maxSize/scaleFactor <= 0.2) || (height/maxSize/scaleFactor <= 0.8)
-}
-
-// A map contains multiple functions that would help resizing image
-// This is one of the best thing that a compiled language like Go can do
-var ImageOptionsGenerator = map[ImageQuality]func(_ *lilliput.ImageHeader, maxSize int) (*ImageOptions, error){
-	// avatar
-	ImageQualityAvatar: func(_ *lilliput.ImageHeader, maxSize int) (*ImageOptions, error) {
-		return &ImageOptions{
-			ImageType: ImageTypeJpeg,
-			Width:     150,
-			Height:    150,
-			Resize:    true,
-		}, nil
-	},
-	// organization:
-	// Try to preserve the size of image
-	ImageQualityOrganization: func(header *lilliput.ImageHeader, maxSize int) (*ImageOptions, error) {
-		if (header.Width() <= maxSize) && (header.Height() <= maxSize) {
-			if IsSizeValidInt(header.Width(), header.Height(), maxSize, 1) {
-				return &ImageOptions{
-					ImageType: ImageTypeJpeg,
-					Width:     header.Width(),
-					Height:    header.Height(),
-					Resize:    true,
-				}, nil
-			}
-			return nil, errors.New("image too large")
-		}
-
-		width, height, err := NormalizeSizeByScaleFactor(header.Width(), header.Height(), maxSize, 1.0)
-		if err != nil {
-			return nil, err
-		}
-		return &ImageOptions{
-			ImageType: ImageTypeJpeg,
-			Width:     width,
-			Height:    height,
-			Resize:    true,
-		}, nil
-	},
-	// default:
-	// Cut the size in half. Btw same code as organization, different factor
-	// There might be a lot of change in the future so this code maybe differ from
-	// organization code, but what ever, this is doing good rn
-	ImageQualityDefault: func(header *lilliput.ImageHeader, maxSize int) (*ImageOptions, error) {
-		newWidth, newHeight := header.Width()/2, header.Height()/2
-		if (header.Width() <= maxSize) && (header.Height() <= maxSize) {
-			if IsSizeValidInt(newWidth, newHeight, maxSize, 1) {
-				return &ImageOptions{
-					ImageType: ImageTypeJpeg,
-					Width:     newWidth,
-					Height:    newWidth,
-					Resize:    true,
-				}, nil
-			}
-			return nil, errors.New("image too large")
-		}
-
-		width, height, err := NormalizeSizeByScaleFactor(header.Width(), header.Height(), maxSize, 0.5)
-		if err != nil {
-			return nil, err
-		}
-		return &ImageOptions{
-			ImageType: ImageTypeJpeg,
-			Width:     width,
-			Height:    height,
-			Resize:    true,
-		}, nil
-	},
-}
 
 var EncodeOptions = map[ImageType]map[int]int{
 	ImageTypeJpeg: {lilliput.JpegQuality: 80},
@@ -170,20 +71,12 @@ type Image struct {
 	Result *ImageResult
 }
 
-func (p *ImageProcessor) AddImage(buf *[]byte, opts *ImageOptions) (*ImageResult, error) {
-	data, err := lilliput.NewDecoder(*buf)
-	if err != nil {
-		return nil, err
-	}
-	// Check file header to ensure that the file is ok
-	header, err := data.Header()
-	if err != nil {
-		return nil, err
-	}
+func (p *ImageProcessor) AddImage(data *lilliput.Decoder, opts *ImageOptions) (*ImageResult, error) {
+	header, _ := (*data).Header()
 	ctx, cancel := context.WithCancel(context.Background())
 
 	image := &Image{
-		Data:   &data,
+		Data:   data,
 		Header: header,
 		Result: &ImageResult{
 			Context: ctx,
@@ -268,33 +161,29 @@ func (p *ImageProcessor) Run() {
 			buffer := make([]byte, DefaultBufferSize*1024*1024)
 			imgOpts := image.ImageOptions
 			// Small check to ensure that people will not put null options
-			if imgOpts == nil {
-				imgOpts, err = ImageOptionsGenerator[ImageQualityDefault](image.Header, p.MaxImageSize)
+			if imgOpts != nil {
+				opts := &lilliput.ImageOptions{
+					FileType: string(imgOpts.ImageType),
+					Width:    imgOpts.Width,
+					Height:   imgOpts.Height,
+					ResizeMethod: func() lilliput.ImageOpsSizeMethod {
+						if imgOpts.Resize {
+							return lilliput.ImageOpsFit
+						}
+						return lilliput.ImageOpsNoResize
+					}(),
+					EncodeOptions: EncodeOptions[imgOpts.ImageType],
+				}
+				buffer, err = p.Ops.Transform(*image.Data, opts, buffer)
 				if err != nil {
 					image.Result.TransformationError = err
-					image.Result.Cancel()
-					break
+				} else {
+					image.Result.Buffer = &buffer
 				}
-			}
-			opts := &lilliput.ImageOptions{
-				FileType: string(imgOpts.ImageType),
-				Width:    imgOpts.Width,
-				Height:   imgOpts.Height,
-				ResizeMethod: func() lilliput.ImageOpsSizeMethod {
-					if imgOpts.Resize {
-						return lilliput.ImageOpsFit
-					}
-					return lilliput.ImageOpsNoResize
-				}(),
-				EncodeOptions: EncodeOptions[imgOpts.ImageType],
-			}
-			buffer, err = p.Ops.Transform(*image.Data, opts, buffer)
-			if err != nil {
-				image.Result.TransformationError = err
+				p.Ops.Clear()
 			} else {
-				image.Result.Buffer = &buffer
+				image.Result.TransformationError = errors.New("image options couldn't be nil")
 			}
-			p.Ops.Clear()
 			image.Result.Cancel()
 		}
 	}

@@ -51,7 +51,6 @@ func (fe FileExtractor) Verify(next http.Handler) http.Handler {
 		}
 
 		r.WithContext(context.WithValue(context.Background(), fe.Field, &buffer))
-
 		next.ServeHTTP(w, r)
 	})
 }

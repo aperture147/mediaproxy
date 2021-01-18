@@ -29,6 +29,7 @@ ENV AWS_ACCESS_KEY_ID=placeholder \
 
 WORKDIR /app
 
+COPY ffmpeg/ffmpeg /bin
 COPY --from=build-env /app/server .
 
 EXPOSE 8080
