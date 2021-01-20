@@ -5,6 +5,8 @@ LABEL maintainer="HaiVQ <haivq@house3d.net>"
 WORKDIR /app
 
 COPY go.mod go.mod
+COPY go.sum go.sum
+
 RUN go mod download
 
 COPY . .
@@ -15,7 +17,7 @@ FROM debian:buster-slim
 LABEL maintainer="HaiVQ <haivq@house3d.net>"
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates && \
+    apt-get install -y --no-install-recommends ca-certificates ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 ENV AWS_ACCESS_KEY_ID=placeholder \
@@ -29,7 +31,6 @@ ENV AWS_ACCESS_KEY_ID=placeholder \
 
 WORKDIR /app
 
-COPY ffmpeg/ffmpeg /bin
 COPY --from=build-env /app/server .
 
 EXPOSE 8080
