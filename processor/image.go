@@ -7,9 +7,10 @@ import (
 	"log"
 )
 
+// Default 3 routines to handle the job
+const DefaultRoutines = 3
+
 const (
-	// Default 3 routines to handle the job
-	DefaultRoutines = 3
 	// Default buffer size in MiB
 	// Please note that 50 MiB is not an optimal value one, there are
 	// some edge case that this buffer size is not large enough.
@@ -20,7 +21,7 @@ const (
 	// increase the buffer size or limit the allowed upload image size.
 	//
 	// Related issue: https://github.com/discord/lilliput/issues/38
-	DefaultBufferSize = 50
+	DefaultImageBufferSize = 50
 	// Default size (4K)
 	DefaultMaxImageSize = 3840
 )
@@ -34,7 +35,7 @@ const (
 )
 
 var EncodeOptions = map[ImageType]map[int]int{
-	ImageTypeJpeg: {lilliput.JpegQuality: 80},
+	ImageTypeJpeg: {lilliput.JpegQuality: 75},
 	ImageTypePng:  {lilliput.PngCompression: 7},
 	ImageTypeWebp: {lilliput.WebpQuality: 85},
 }
@@ -48,6 +49,8 @@ type ImageResult struct {
 	// Buffer pointer that point to the image data
 	Buffer *[]byte
 
+	// This is used to signal other goroutine
+	// which is waiting for the processed result
 	context.Context
 	// CancelFunc Shouldn't be called outside of the processor
 	Cancel context.CancelFunc
@@ -150,7 +153,6 @@ func (p *ImageProcessor) Start() {
 }
 
 func (p *ImageProcessor) Run() {
-	var err error
 	for {
 		select {
 		case <-p.Done():
@@ -158,7 +160,7 @@ func (p *ImageProcessor) Run() {
 			log.Println("Image Processor stopped")
 			return
 		case image := <-ImageQueue:
-			buffer := make([]byte, DefaultBufferSize*1024*1024)
+			buffer := make([]byte, DefaultImageBufferSize*1024*1024)
 			imgOpts := image.ImageOptions
 			// Small check to ensure that people will not put null options
 			if imgOpts != nil {
@@ -174,11 +176,11 @@ func (p *ImageProcessor) Run() {
 					}(),
 					EncodeOptions: EncodeOptions[imgOpts.ImageType],
 				}
-				buffer, err = p.Ops.Transform(*image.Data, opts, buffer)
+				resultBuffer, err := p.Ops.Transform(*image.Data, opts, buffer)
 				if err != nil {
 					image.Result.TransformationError = err
 				} else {
-					image.Result.Buffer = &buffer
+					image.Result.Buffer = &resultBuffer
 				}
 				p.Ops.Clear()
 			} else {

@@ -3,6 +3,7 @@ package processor
 import (
 	"context"
 	"fmt"
+	"github.com/discord/lilliput"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -20,7 +21,18 @@ func TestImageProcessor(t *testing.T) {
 		t.Fatal("cannot read image 1")
 	}
 
-	image, err := p.AddImage(&inputBuf, nil)
+	data, err := lilliput.NewDecoder(inputBuf)
+
+	if err != nil {
+		t.Fatal("cannot decode image 1")
+	}
+
+	image, err := p.AddImage(&data, &ImageOptions{
+		ImageType: ImageTypeJpeg,
+		Width:     150,
+		Height:    150,
+		Resize:    true,
+	})
 	if err != nil {
 		t.Fatal("cannot add image 1")
 	}
@@ -54,7 +66,17 @@ func TestImageProcessorInterrupted(t *testing.T) {
 		t.Fatal("cannot read image 1")
 	}
 
-	image, err := p.AddImage(&inputBuf, nil)
+	data, err := lilliput.NewDecoder(inputBuf)
+	if err != nil {
+		t.Fatal("cannot decode image 1")
+	}
+
+	image, err := p.AddImage(&data, &ImageOptions{
+		ImageType: ImageTypeJpeg,
+		Width:     150,
+		Height:    150,
+		Resize:    true,
+	})
 	if err != nil {
 		t.Fatal("cannot add image 1")
 	}
