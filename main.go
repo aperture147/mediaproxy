@@ -1,63 +1,62 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
+	"bytes"
+	"io/ioutil"
 	"log"
-	"mediaproxy/server"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"os/exec"
 )
 
+func check(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	file, err := os.Open("test.mp3") // open file
+	check(err)
 
-	r := mux.NewRouter()
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			next.ServeHTTP(w, r)
-		})
-	})
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		okJson := "{\"status\": \"ok\"}"
-		fmt.Fprint(w, okJson)
-	})
-	r.PathPrefix("/image").Handler(server.NewImageRouter(ctx, 10))
+	defer file.Close()
+	buf, err := ioutil.ReadAll(file)
+	check(err)
 
-	allowedHeaders := handlers.AllowedHeaders([]string{"Authorization"})
-	allowedMethods := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT"})
+	cmd := exec.Command("ffmpeg", "-y", // Yes to all
+		"-hide_banner", "-loglevel", "panic", // Hide all logs
+		"-i", "pipe:0", // take stdin as input
+		"-map_metadata", "-1", // strip out all (mostly) metadata
+		"-c:a", "libmp3lame", // use mp3 lame codec
+		"-vsync", "2", // suppress "Frame rate very high for a muxer not efficiently supporting it"
+		"-b:a", "128k", // Down sample audio birate to 128k
+		"-f", "mp3", // using mp3 muxer (IMPORTANT, output data to pipe require manual muxer selecting)
+		"pipe:1", // output to stdout
+	)
 
-	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: handlers.CORS(allowedHeaders, allowedMethods)(r),
-	}
+	resultBuffer := bytes.NewBuffer(make([]byte, 5*1024*1024)) // pre allocate 5MiB buffer
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	cmd.Stderr = os.Stderr // bind log stream to stderr
+	cmd.Stdout = resultBuffer
 
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalln("listen:", err)
-		}
-	}()
+	stdin, err := cmd.StdinPipe() // Open stdin pipe
+	check(err)
 
-	log.Println("server started, listening to 8080 port")
+	err = cmd.Start() // Start a process on another goroutine
+	check(err)
 
-	<-done
-	log.Print("stopping server")
-	stopCtx, cancel2 := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel2()
+	_, err = stdin.Write(buf) // pump audio data to stdin pipe
+	check(err)
 
-	if err := srv.Shutdown(stopCtx); err != nil {
-		log.Println("server was not gracefully shutdown, terminated")
-	}
+	err = stdin.Close() // close the stdin, or ffmpeg will wait forever
+	check(err)
 
-	log.Println("server was gracefully stopped")
+	err = cmd.Wait()
+	check(err)
+
+	outputFile, err := os.Create("out.mp3")
+	check(err)
+
+	defer outputFile.Close()
+	_, err = outputFile.Write(resultBuffer.Bytes())
+	check(err)
 }
