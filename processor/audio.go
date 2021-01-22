@@ -104,6 +104,7 @@ func (p *AudioProcessor) Run() {
 				continue
 			}
 			audio.Result.Buffer = result
+			audio.Result.Cancel()
 		}
 	}
 }
