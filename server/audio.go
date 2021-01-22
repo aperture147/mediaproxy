@@ -24,7 +24,7 @@ func NewAudioRouter(ctx context.Context, maxSize int) *mux.Router {
 	opts := processor.AudioProcessorOptions{}
 	p := processor.NewAudioProcessor(ctx, opts)
 
-	r.HandleFunc("/image/upload", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/audio/upload", func(w http.ResponseWriter, r *http.Request) {
 		dataPtr := r.Context().Value(AudioFileField).(*[]byte)
 
 		result, err := p.AddAudio(dataPtr)

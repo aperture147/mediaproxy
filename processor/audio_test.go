@@ -3,7 +3,6 @@ package processor
 import (
 	"bytes"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"testing"
@@ -59,8 +58,6 @@ func TestFFmpegPipe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	log.Println("LMAAO")
 
 	outputFile, err := os.Create("stdout.mp3")
 	if err != nil {
