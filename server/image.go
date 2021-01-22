@@ -14,9 +14,8 @@ import (
 	"time"
 )
 
-const ImageFileField = "imageFile"
-
 const (
+	ImageFileField  = "imageFile"
 	ImageOptionsKey = "options"
 	ImageDataKey    = "data"
 )
@@ -59,6 +58,7 @@ func NewImageRouter(ctx context.Context, maxSize int) *mux.Router {
 				util.WriteServerErrorResponse(w, err)
 				return
 			}
+			util.WriteOkResponse(w, nil)
 		}
 	})
 
