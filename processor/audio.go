@@ -38,7 +38,7 @@ type Audio struct {
 	// TODO: Allow user to pass some Audio processing options
 }
 
-type AudioProcessorOption struct {
+type AudioProcessorOptions struct {
 	// Number of routines/threads should be run
 	Routines int
 }
@@ -51,10 +51,10 @@ type AudioProcessor struct {
 	context.Context
 	Cancel context.CancelFunc
 
-	AudioProcessorOption
+	AudioProcessorOptions
 }
 
-func NewAudioProcessor(parentCtx context.Context, options AudioProcessorOption) AudioProcessor {
+func NewAudioProcessor(parentCtx context.Context, options AudioProcessorOptions) AudioProcessor {
 	ctx, cancel := func() (context.Context, context.CancelFunc) {
 		ctx := context.Background()
 		if parentCtx != nil {
@@ -66,7 +66,7 @@ func NewAudioProcessor(parentCtx context.Context, options AudioProcessorOption) 
 		Context: ctx,
 		Cancel:  cancel,
 		Queue:   make(chan *Audio, 10), // is 10 too much?
-		AudioProcessorOption: AudioProcessorOption{
+		AudioProcessorOptions: AudioProcessorOptions{
 			Routines: func() int {
 				if options.Routines != 0 {
 					return options.Routines
