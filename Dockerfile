@@ -1,7 +1,5 @@
 FROM golang:1.15-buster AS build-env
 
-LABEL maintainer="HaiVQ <haivq@house3d.net>"
-
 WORKDIR /app
 
 COPY go.mod go.mod
@@ -26,7 +24,7 @@ ENV AWS_ACCESS_KEY_ID=placeholder \
     BUCKET=placeholder \
     BUCKET_PATH=uploads \
     AUTH_TOKEN=auth_token \
-    HQ_TOKEN=hq_token \
+    SPECIAL_AUTH_TOKEN=special_auth_token \
     HOST="http://localhost"
 
 WORKDIR /app

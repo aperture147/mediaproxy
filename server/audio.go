@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
 	"io/ioutil"
@@ -34,7 +33,7 @@ func NewAudioRouter(ctx context.Context, maxSize int) *mux.Router {
 		}
 		select {
 		case <-time.After(30 * time.Second):
-			util.WriteServerErrorResponse(w, errors.New("timed out"))
+			util.WriteServerErrorResponse(w, fmt.Errorf("convert: %v", ErrTimedOut))
 		case <-result.Done():
 			if result.ConvertError != nil {
 				util.WriteServerErrorResponse(w, err)

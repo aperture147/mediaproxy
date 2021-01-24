@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/discord/lilliput"
 	"github.com/gorilla/mux"
@@ -44,7 +43,7 @@ func NewImageRouter(ctx context.Context, maxSize int) *mux.Router {
 		}
 		select {
 		case <-time.After(30 * time.Second):
-			util.WriteServerErrorResponse(w, errors.New("timed out"))
+			util.WriteServerErrorResponse(w, fmt.Errorf("transformation: %v", ErrTimedOut))
 		case <-result.Done():
 			if result.TransformationError != nil {
 				util.WriteServerErrorResponse(w, err)

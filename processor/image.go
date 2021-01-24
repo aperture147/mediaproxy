@@ -3,6 +3,7 @@ package processor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/discord/lilliput"
 	"log"
 )
@@ -40,7 +41,10 @@ var EncodeOptions = map[ImageType]map[int]int{
 	ImageTypeWebp: {lilliput.WebpQuality: 85},
 }
 
-var ImageQueue = make(chan *Image, 500)
+var (
+	ErrTransformationError = errors.New("cannot transform the image")
+	ErrNilImageOptions     = errors.New("nil image options")
+)
 
 type ImageResult struct {
 	// Object that contains the image transformation error
@@ -87,7 +91,7 @@ func (p *ImageProcessor) AddImage(data *lilliput.Decoder, opts *ImageOptions) (*
 		},
 		ImageOptions: opts,
 	}
-	ImageQueue <- image
+	p.Queue <- image
 
 	return image.Result, nil
 }
@@ -159,7 +163,7 @@ func (p *ImageProcessor) Run() {
 			p.Ops.Close()
 			log.Println("Image Processor stopped")
 			return
-		case image := <-ImageQueue:
+		case image := <-p.Queue:
 			buffer := make([]byte, DefaultImageBufferSize*1024*1024)
 			imgOpts := image.ImageOptions
 			// Small check to ensure that people will not put null options
@@ -178,13 +182,13 @@ func (p *ImageProcessor) Run() {
 				}
 				resultBuffer, err := p.Ops.Transform(*image.Data, opts, buffer)
 				if err != nil {
-					image.Result.TransformationError = err
+					image.Result.TransformationError = fmt.Errorf("transformation: %v", fmt.Errorf("%v: %v", ErrTransformationError, err))
 				} else {
 					image.Result.Buffer = &resultBuffer
 				}
 				p.Ops.Clear()
 			} else {
-				image.Result.TransformationError = errors.New("image options couldn't be nil")
+				image.Result.TransformationError = fmt.Errorf("options: %v", ErrNilImageOptions)
 			}
 			image.Result.Cancel()
 		}

@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"mediaproxy/util"
 	"net/http"
 	"os"
@@ -10,6 +11,11 @@ import (
 )
 
 const SpecialRequestKey = "special"
+
+var (
+	ErrWrongToken = errors.New("wrong token")
+	ErrNoToken    = errors.New("no token provided")
+)
 
 type TokenAuthenticator struct {
 	// Normal token
@@ -25,7 +31,7 @@ func NewTokenAuthenticator() TokenAuthenticator {
 	if token == "" {
 		token = "5FpA8Ad9uHCmCdPuf8sj49SpeyCrDTLAw4xAGUGH85Rf2phvQ77wDATjA2M4w8CD"
 	}
-	specialToken := os.Getenv("HQ_TOKEN")
+	specialToken := os.Getenv("SPECIAL_AUTH_TOKEN")
 	if specialToken == "" {
 		specialToken = "8rzpd9ZMeQnnYQrCnQe924QeLsRwczzkZ6K6THnKU39fLAM2ZSbLKXdEBHKF934e"
 	}
@@ -38,7 +44,7 @@ func NewTokenAuthenticator() TokenAuthenticator {
 func (t TokenAuthenticator) Verify(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") == "" {
-			util.WriteForbiddenResponse(w, errors.New("no token provided"))
+			util.WriteForbiddenResponse(w, fmt.Errorf("token: %v", ErrNoToken))
 			return
 		}
 
@@ -48,6 +54,6 @@ func (t TokenAuthenticator) Verify(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		util.WriteUnauthorizedResponse(w, errors.New("wrong token"))
+		util.WriteUnauthorizedResponse(w, fmt.Errorf("token: %v", ErrWrongToken))
 	})
 }

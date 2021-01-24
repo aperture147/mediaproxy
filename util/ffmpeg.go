@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os/exec"
 	"time"
 )
@@ -26,6 +27,14 @@ var ffmpegArgs = []string{
 	"pipe:1", // Output audio to
 }
 
+var (
+	ErrConvertError = errors.New("cannot convert audio file")
+)
+
+func GenerateError(err error) error {
+	return fmt.Errorf("convert: %v", fmt.Errorf("%v: %v", ErrConvertError, err))
+}
+
 // Check this for further explaination: https://gist.github.com/aperture147/ad0f5b965912537d03b0e851bb95bd38
 func AudioDownSample(buf *[]byte, allocMemSize int) (*[]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultDownSampleTimeout)
@@ -37,22 +46,22 @@ func AudioDownSample(buf *[]byte, allocMemSize int) (*[]byte, error) {
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, err
+		return nil, GenerateError(err)
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		return nil, err
+		return nil, GenerateError(err)
 	}
 
 	_, err = stdin.Write(*buf) // pump audio data to stdin pipe
 	if err != nil {
-		return nil, err
+		return nil, GenerateError(err)
 	}
 
 	err = stdin.Close()
 	if err != nil {
-		return nil, err
+		return nil, GenerateError(err)
 	}
 
 	<-ctx.Done()
