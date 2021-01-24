@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/discord/lilliput"
 	"math"
 	"mediaproxy/processor"
@@ -18,6 +19,12 @@ const (
 	ImageQualityCustom       = "custom"       // custom defined image options
 )
 
+var (
+	ErrImageSizeTooLarge      = errors.New("image size too large") // Image width and height too large
+	ErrImageDecodeFailed      = errors.New("image decode failed")  // Cannot decode image
+	ErrImageHeaderCheckFailed = errors.New("image header check failed")
+)
+
 func NormalizeSizeByScaleFactor(origWidth, origHeight, maxSize int, scaleFactor float64) (int, int, error) {
 	divisor := float64(maxSize) * scaleFactor
 	floatWidth, floatHeight := float64(origWidth), float64(origHeight)
@@ -26,7 +33,7 @@ func NormalizeSizeByScaleFactor(origWidth, origHeight, maxSize int, scaleFactor 
 	if IsSizeValidFloat64(newWidth, newHeight, float64(maxSize), scaleFactor) {
 		return int(newWidth), int(newHeight), nil
 	}
-	return 0, 0, errors.New("image too large")
+	return 0, 0, fmt.Errorf("size normaliziation: %v", ErrImageSizeTooLarge)
 }
 
 // This function is called on function that doesnt casting width height to other number type
@@ -57,7 +64,7 @@ func ImageQualityOrganizationGenerator(header *lilliput.ImageHeader, maxSize int
 				Resize:    true,
 			}, nil
 		}
-		return nil, errors.New("image too large")
+		return nil, ErrImageSizeTooLarge
 	}
 
 	width, height, err := NormalizeSizeByScaleFactor(header.Width(), header.Height(), maxSize, 1.0)
@@ -83,7 +90,7 @@ func ImageQualityDefaultGenerator(header *lilliput.ImageHeader, maxSize int) (*p
 				Resize:    true,
 			}, nil
 		}
-		return nil, errors.New("image too large")
+		return nil, ErrImageSizeTooLarge
 	}
 
 	width, height, err := NormalizeSizeByScaleFactor(header.Width(), header.Height(), maxSize, 0.5)
@@ -139,14 +146,14 @@ func (i ImageDecoder) Decode(next http.Handler) http.Handler {
 		bufferPtr := r.Context().Value(i.FileField).(*[]byte)
 		data, err := lilliput.NewDecoder(*bufferPtr)
 		if err != nil {
-			util.WriteBadRequestResponse(w, err)
+			util.WriteBadRequestResponse(w, fmt.Errorf("%v: %v", ErrImageDecodeFailed, err))
 			return
 		}
 
 		// Check file header to ensure that the file is ok
 		header, err := data.Header()
 		if err != nil {
-			util.WriteBadRequestResponse(w, err)
+			util.WriteBadRequestResponse(w, fmt.Errorf("%v: %v", ErrImageHeaderCheckFailed, err))
 			return
 		}
 
@@ -154,7 +161,7 @@ func (i ImageDecoder) Decode(next http.Handler) http.Handler {
 		opts, err := ImageOptionsGenerator(header, quality, i.MaxSize)
 
 		if err != nil {
-			util.WriteServerErrorResponse(w, err)
+			util.WriteServerErrorResponse(w, fmt.Errorf("image options: %v", err))
 			return
 		}
 

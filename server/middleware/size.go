@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"mediaproxy/util"
 	"net/http"
@@ -23,6 +24,8 @@ func NewFileExtractor(size int, field string) FileExtractor {
 	return FileExtractor{int64(size * 1024 * 1024), field}
 }
 
+var ErrTooLarge = errors.New("too large")
+
 // This function will try to verity the whole package size
 func (fe FileExtractor) Verify(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -34,12 +37,12 @@ func (fe FileExtractor) Verify(next http.Handler) http.Handler {
 		file, _, err := r.FormFile(fe.Field)
 
 		if err != nil {
-			util.WriteBadRequestResponse(w, err)
+			util.WriteBadRequestResponse(w, fmt.Errorf("request: %v", ErrTooLarge))
 			return
 		}
 
 		if file.(Sizer).Size() > fe.AllowedSize {
-			util.WriteBadRequestResponse(w, errors.New(fe.Field+" too large"))
+			util.WriteBadRequestResponse(w, fmt.Errorf("%s: %v", fe.Field, ErrTooLarge))
 			return
 		}
 
