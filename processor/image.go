@@ -27,15 +27,13 @@ const (
 	DefaultMaxImageSize = 3840
 )
 
-type ImageType string
-
 const (
-	ImageTypeJpeg ImageType = ".jpeg"
-	ImageTypePng  ImageType = ".png"
-	ImageTypeWebp ImageType = ".webp"
+	ImageTypeJpeg = "jpeg"
+	ImageTypePng  = "png"
+	ImageTypeWebp = "webp"
 )
 
-var EncodeOptions = map[ImageType]map[int]int{
+var EncodeOptions = map[string]map[int]int{
 	ImageTypeJpeg: {lilliput.JpegQuality: 75},
 	ImageTypePng:  {lilliput.PngCompression: 7},
 	ImageTypeWebp: {lilliput.WebpQuality: 85},
@@ -61,7 +59,7 @@ type ImageResult struct {
 }
 
 type ImageOptions struct {
-	ImageType ImageType
+	ImageType string
 	Width     int
 	Height    int
 	Resize    bool

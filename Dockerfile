@@ -21,8 +21,8 @@ RUN apt-get update && \
 ENV AWS_ACCESS_KEY_ID=placeholder \
     AWS_SECRET_ACCESS_KEY=placeholder \
     AWS_REGION=ap-southeast-1 \
-    BUCKET=placeholder \
-    BUCKET_PATH=uploads \
+    AWS_S3_BUCKET=placeholder \
+    AWS_S3_BUCKET_PATH=uploads \
     AUTH_TOKEN=auth_token \
     SPECIAL_AUTH_TOKEN=special_auth_token \
     HOST="http://localhost"

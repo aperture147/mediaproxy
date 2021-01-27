@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/discord/lilliput"
 	"github.com/gorilla/mux"
-	"io/ioutil"
 	"mediaproxy/processor"
 	"mediaproxy/server/middleware"
+	"mediaproxy/storage"
 	"mediaproxy/util"
 	"net/http"
 	"time"
@@ -19,7 +19,7 @@ const (
 	ImageDataKey    = "data"
 )
 
-func NewImageRouter(ctx context.Context, maxSize int) *mux.Router {
+func NewImageRouter(ctx context.Context, maxSize int, storage storage.Storage) *mux.Router {
 	auth := middleware.NewTokenAuthenticator()
 	extractor := middleware.NewFileExtractor(maxSize, ImageFileField)
 	decoder := middleware.NewImageDecoder(maxSize, ImageFileField, ImageOptionsKey, ImageDataKey)
@@ -51,13 +51,12 @@ func NewImageRouter(ctx context.Context, maxSize int) *mux.Router {
 			}
 			imgBuf := result.Buffer
 			hashString := util.GetMd5String(imgBuf)
-
-			err = ioutil.WriteFile(fmt.Sprintf("%s.jpeg", hashString), *imgBuf, 0755)
+			fullPath, err := storage.Save(hashString, "image/"+optsPtr.ImageType, imgBuf)
 			if err != nil {
 				util.WriteServerErrorResponse(w, err)
 				return
 			}
-			util.WriteOkResponse(w, nil)
+			util.WriteOkResponse(w, fullPath)
 		}
 	})
 

@@ -58,7 +58,7 @@ func ImageQualityOrganizationGenerator(header *lilliput.ImageHeader, maxSize int
 	if (header.Width() <= maxSize) && (header.Height() <= maxSize) {
 		if IsSizeValidInt(header.Width(), header.Height(), maxSize, 1) {
 			return &processor.ImageOptions{
-				ImageType: processor.ImageTypeJpeg,
+				ImageType: processor.ImageTypePng,
 				Width:     header.Width(),
 				Height:    header.Height(),
 				Resize:    true,
@@ -72,7 +72,7 @@ func ImageQualityOrganizationGenerator(header *lilliput.ImageHeader, maxSize int
 		return nil, err
 	}
 	return &processor.ImageOptions{
-		ImageType: processor.ImageTypeJpeg,
+		ImageType: processor.ImageTypePng,
 		Width:     width,
 		Height:    height,
 		Resize:    true,
@@ -143,8 +143,7 @@ func NewImageDecoder(maxSize int, fileField, optsField, dataField string) ImageD
 
 func (i ImageDecoder) Decode(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bufferPtr := r.Context().Value(i.FileField).(*[]byte)
-		data, err := lilliput.NewDecoder(*bufferPtr)
+		data, err := lilliput.NewDecoder(*(r.Context().Value(i.FileField).(*[]byte)))
 		if err != nil {
 			util.WriteBadRequestResponse(w, fmt.Errorf("%v: %v", ErrImageDecodeFailed, err))
 			return
