@@ -167,7 +167,7 @@ func (p *ImageProcessor) Run() {
 			// Small check to ensure that people will not put null options
 			if imgOpts != nil {
 				opts := &lilliput.ImageOptions{
-					FileType: string(imgOpts.ImageType),
+					FileType: imgOpts.ImageType,
 					Width:    imgOpts.Width,
 					Height:   imgOpts.Height,
 					ResizeMethod: func() lilliput.ImageOpsSizeMethod {
