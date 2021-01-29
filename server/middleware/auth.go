@@ -26,6 +26,7 @@ type TokenAuthenticator struct {
 	SpecialToken string
 }
 
+// Simple auth implementation
 func NewTokenAuthenticator() TokenAuthenticator {
 	token := os.Getenv("AUTH_TOKEN")
 	if token == "" {
@@ -49,10 +50,15 @@ func (t TokenAuthenticator) Verify(next http.Handler) http.Handler {
 		}
 
 		rawAuth := strings.Split(r.Header.Get("Authorization"), " ")
-		if len(rawAuth) == 2 && rawAuth[0] == "Bearer" && rawAuth[1] == t.Token {
-			r.WithContext(context.WithValue(context.Background(), SpecialRequestKey, true))
-			next.ServeHTTP(w, r)
-			return
+		if len(rawAuth) == 2 && rawAuth[0] == "Bearer" {
+			if rawAuth[1] == t.SpecialToken {
+				r.WithContext(context.WithValue(context.Background(), SpecialRequestKey, true))
+				next.ServeHTTP(w, r)
+				return
+			} else if rawAuth[1] == t.Token {
+				next.ServeHTTP(w, r)
+				return
+			}
 		}
 		util.WriteUnauthorizedResponse(w, fmt.Errorf("token: %v", ErrWrongToken))
 	})
