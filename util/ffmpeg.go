@@ -35,7 +35,11 @@ func GenerateError(err error) error {
 	return fmt.Errorf("convert: %v", fmt.Errorf("%v: %v", ErrConvertError, err))
 }
 
-// Check this for further explaination: https://gist.github.com/aperture147/ad0f5b965912537d03b0e851bb95bd38
+/*
+This is a simple CLI ffmpeg wrapper. I know it's better to use cgo and libavcodec
+but I don't have much time and experience to work with both cgo and libavcodec.
+Check this for further explanation about what this piece of code do: http://bit.ly/3t6PSrZ
+*/
 func AudioDownSample(buf *[]byte, allocMemSize int) (*[]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultDownSampleTimeout)
 	defer cancel()
