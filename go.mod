@@ -1,4 +1,4 @@
-module mediaproxy
+module github.com/aperture147/mediaproxy
 
 go 1.15
 

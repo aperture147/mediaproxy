@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aperture147/mediaproxy/processor"
+	"github.com/aperture147/mediaproxy/util"
 	"github.com/discord/lilliput"
 	"math"
-	"mediaproxy/processor"
-	"mediaproxy/util"
 	"net/http"
 )
 

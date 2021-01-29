@@ -3,12 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/aperture147/mediaproxy/processor"
+	"github.com/aperture147/mediaproxy/server/middleware"
+	"github.com/aperture147/mediaproxy/storage"
+	"github.com/aperture147/mediaproxy/util"
 	"github.com/discord/lilliput"
 	"github.com/gorilla/mux"
-	"mediaproxy/processor"
-	"mediaproxy/server/middleware"
-	"mediaproxy/storage"
-	"mediaproxy/util"
 	"net/http"
 	"time"
 )

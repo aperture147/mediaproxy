@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aperture147/mediaproxy/util"
 	"io/ioutil"
-	"mediaproxy/util"
 	"net/http"
 )
 

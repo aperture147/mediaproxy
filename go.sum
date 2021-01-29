@@ -19,6 +19,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
+github.com/tdewolff/minify v1.1.0 h1:nxHQi1ML+g3ZbZHffiZ6eC7vMqNvSRfX3KB5Y5y/kfw=
+github.com/tdewolff/minify v2.3.6+incompatible h1:2hw5/9ZvxhWLvBUnHE06gElGYz+Jv9R4Eys0XUzItYo=
 github.com/tdewolff/minify/v2 v2.9.11 h1:8o6hclGwxm6MNwTPHabvdND5SghhHs0bn+3/+uAf0yQ=
 github.com/tdewolff/minify/v2 v2.9.11/go.mod h1:YZk0lGOc6CvQrqvm5f7V3ihaq3QUd9acS4HESdVDOaM=
 github.com/tdewolff/parse/v2 v2.5.8 h1:vutkOO9Xi3DehIzCLHqvMM2hFXo54S0iDvIG/hYznnE=

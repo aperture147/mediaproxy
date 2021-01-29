@@ -2,8 +2,8 @@ package processor
 
 import (
 	"context"
+	"github.com/aperture147/mediaproxy/util"
 	"log"
-	"mediaproxy/util"
 )
 
 const (

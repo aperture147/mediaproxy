@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"mediaproxy/util"
+	"github.com/aperture147/mediaproxy/util"
 	"net/http"
 	"os"
 	"strings"
