@@ -125,7 +125,7 @@ func NewImageProcessor(parentCtx context.Context, options ImageProcessorOptions)
 		}
 		return context.WithCancel(ctx)
 	}()
-	return ImageProcessor{
+	p := ImageProcessor{
 		Ops:     lilliput.NewImageOps(options.MaxImageSize),
 		Context: ctx,
 		Cancel:  cancel,
@@ -145,6 +145,8 @@ func NewImageProcessor(parentCtx context.Context, options ImageProcessorOptions)
 			}(),
 		},
 	}
+	p.Start()
+	return p
 }
 
 func (p *ImageProcessor) Start() {
@@ -167,7 +169,7 @@ func (p *ImageProcessor) Run() {
 			// Small check to ensure that people will not put null options
 			if imgOpts != nil {
 				opts := &lilliput.ImageOptions{
-					FileType: imgOpts.ImageType,
+					FileType: "." + imgOpts.ImageType,
 					Width:    imgOpts.Width,
 					Height:   imgOpts.Height,
 					ResizeMethod: func() lilliput.ImageOpsSizeMethod {

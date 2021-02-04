@@ -54,6 +54,13 @@ type AudioProcessor struct {
 	AudioProcessorOptions
 }
 
+func (p *AudioProcessor) Start() {
+	log.Printf("Starting %d routines\n", p.Routines)
+	for i := 1; i <= p.Routines; i++ {
+		go p.Run()
+	}
+}
+
 func NewAudioProcessor(parentCtx context.Context, options AudioProcessorOptions) AudioProcessor {
 	ctx, cancel := func() (context.Context, context.CancelFunc) {
 		ctx := context.Background()
@@ -62,7 +69,7 @@ func NewAudioProcessor(parentCtx context.Context, options AudioProcessorOptions)
 		}
 		return context.WithCancel(ctx)
 	}()
-	return AudioProcessor{
+	p := AudioProcessor{
 		Context: ctx,
 		Cancel:  cancel,
 		Queue:   make(chan *Audio, 10), // is 10 too much?
@@ -75,6 +82,8 @@ func NewAudioProcessor(parentCtx context.Context, options AudioProcessorOptions)
 			}(),
 		},
 	}
+	p.Start()
+	return p
 }
 
 func (p *AudioProcessor) AddAudio(data *[]byte) (*AudioResult, error) {
