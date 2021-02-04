@@ -52,8 +52,7 @@ func (t TokenAuthenticator) Verify(next http.Handler) http.Handler {
 		rawAuth := strings.Split(r.Header.Get("Authorization"), " ")
 		if len(rawAuth) == 2 && rawAuth[0] == "Bearer" {
 			if rawAuth[1] == t.SpecialToken {
-				r.WithContext(context.WithValue(context.Background(), SpecialRequestKey, true))
-				next.ServeHTTP(w, r)
+				next.ServeHTTP(w, r.WithContext(context.WithValue(context.Background(), SpecialRequestKey, true)))
 				return
 			} else if rawAuth[1] == t.Token {
 				next.ServeHTTP(w, r)

@@ -164,9 +164,6 @@ func (i ImageDecoder) Decode(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(context.Background(), i.OptionsField, opts)
-		r.WithContext(context.WithValue(ctx, i.DataField, data))
-
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(context.WithValue(context.Background(), i.OptionsField, opts), i.DataField, &data)))
 	})
 }
