@@ -42,12 +42,12 @@ func NewAudioRouter(ctx context.Context, maxSize int, storage storage.Storage) *
 			audioBuf := result.Buffer
 			hashString := util.GetMd5String(audioBuf)
 
-			fullPath, err2 := storage.Save(hashString, "audio/mpeg", audioBuf)
+			path, err2 := storage.Save(hashString, "audio/mpeg", audioBuf)
 			if err2 != nil {
 				util.WriteServerErrorResponse(w, err2)
 				return
 			}
-			util.WriteOkResponse(w, fullPath)
+			util.WriteOkResponse(w, GetResponse(path))
 		}
 	})
 	return r

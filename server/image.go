@@ -57,12 +57,12 @@ func NewImageRouter(ctx context.Context, maxFileSize, maxImageSize int, storage 
 			}
 			imgBuf := result.Buffer
 			hashString := util.GetMd5String(imgBuf)
-			fullPath, err2 := storage.Save(hashString, "image/"+optsPtr.ImageType, imgBuf)
+			path, err2 := storage.Save(hashString, "image/"+optsPtr.ImageType, imgBuf)
 			if err2 != nil {
 				util.WriteServerErrorResponse(w, err2)
 				return
 			}
-			util.WriteOkResponse(w, fullPath)
+			util.WriteOkResponse(w, GetResponse(path))
 		}
 	})
 
