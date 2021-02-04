@@ -40,7 +40,7 @@ This is a simple CLI ffmpeg wrapper. I know it's better to use cgo and libavcode
 but I don't have much time and experience to work with both cgo and libavcodec.
 Check this for further explanation about what this piece of code do: http://bit.ly/3t6PSrZ
 */
-func AudioDownSample(buf *[]byte, allocMemSize int) (*[]byte, error) {
+func AudioDownSampleToMp3(buf *[]byte, allocMemSize int) (*[]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultDownSampleTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, ffmpegPath, ffmpegArgs...)

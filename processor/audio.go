@@ -98,7 +98,7 @@ func (p *AudioProcessor) Run() {
 			log.Println("Audio Processor stopped")
 			return
 		case audio := <-p.Queue:
-			result, err := util.AudioDownSample(audio.Data, DefaultAudioBufferSize)
+			result, err := util.AudioDownSampleToMp3(audio.Data, DefaultAudioBufferSize)
 			if err != nil {
 				audio.Result.ConvertError = err
 				continue

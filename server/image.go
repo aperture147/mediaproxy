@@ -19,10 +19,16 @@ const (
 	ImageDataKey    = "data"
 )
 
-func NewImageRouter(ctx context.Context, maxSize int, storage storage.Storage) *mux.Router {
+/*
+ctx: golang context
+maxFileSize: max allowed file size
+maxImageSize: max width and height of the image
+storage: storage component, with API helps storing image
+*/
+func NewImageRouter(ctx context.Context, maxFileSize, maxImageSize int, storage storage.Storage) *mux.Router {
 	auth := middleware.NewTokenAuthenticator()
-	extractor := middleware.NewFileExtractor(maxSize, ImageFileField)
-	decoder := middleware.NewImageDecoder(maxSize, ImageFileField, ImageOptionsKey, ImageDataKey)
+	extractor := middleware.NewFileExtractor(maxFileSize, ImageFileField)
+	decoder := middleware.NewImageDecoder(maxImageSize, ImageFileField, ImageOptionsKey, ImageDataKey)
 
 	r := mux.NewRouter()
 	r.Use(auth.Verify, extractor.Verify, decoder.Decode)

@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"github.com/aperture147/mediaproxy/processor"
 	"github.com/aperture147/mediaproxy/server/middleware"
+	"github.com/aperture147/mediaproxy/storage"
 	"github.com/aperture147/mediaproxy/util"
 	"github.com/gorilla/mux"
-	"io/ioutil"
 	"net/http"
 	"time"
 )
 
 const AudioFileField = "audioFile"
 
-func NewAudioRouter(ctx context.Context, maxSize int) *mux.Router {
+func NewAudioRouter(ctx context.Context, maxSize int, storage storage.Storage) *mux.Router {
 	auth := middleware.NewTokenAuthenticator()
 	extractor := middleware.NewFileExtractor(maxSize, AudioFileField)
 	r := mux.NewRouter()
@@ -42,12 +42,12 @@ func NewAudioRouter(ctx context.Context, maxSize int) *mux.Router {
 			audioBuf := result.Buffer
 			hashString := util.GetMd5String(audioBuf)
 
-			err = ioutil.WriteFile(fmt.Sprintf("%s.mp3", hashString), *audioBuf, 0755)
-			if err != nil {
-				util.WriteServerErrorResponse(w, err)
+			fullPath, err2 := storage.Save(hashString, "audio/mpeg", audioBuf)
+			if err2 != nil {
+				util.WriteServerErrorResponse(w, err2)
 				return
 			}
-			util.WriteOkResponse(w, nil)
+			util.WriteOkResponse(w, fullPath)
 		}
 	})
 	return r
