@@ -1,11 +1,9 @@
-package server
+package router
 
 import (
-	"context"
 	"fmt"
 	"github.com/aperture147/mediaproxy/processor"
-	"github.com/aperture147/mediaproxy/server/middleware"
-	"github.com/aperture147/mediaproxy/storage"
+	"github.com/aperture147/mediaproxy/router/middleware"
 	"github.com/aperture147/mediaproxy/util"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -14,14 +12,20 @@ import (
 
 const AudioFileField = "audioFile"
 
-func NewAudioRouter(ctx context.Context, maxSize int, storage storage.Storage) *mux.Router {
+type AudioRouterSetting struct {
+	Setting             // base setting
+	MaxFileSize     int // max audio file size allowed
+	MaxImageDimSize int // max image width and height
+}
+
+func NewAudioRouter(setting AudioRouterSetting) *mux.Router {
 	auth := middleware.NewTokenAuthenticator()
-	extractor := middleware.NewFileExtractor(maxSize, AudioFileField)
+	extractor := middleware.NewFileExtractor(setting.MaxFileSize, AudioFileField)
 	r := mux.NewRouter()
 	r.Use(auth.Verify, extractor.Verify)
 
 	opts := processor.AudioProcessorOptions{}
-	p := processor.NewAudioProcessor(ctx, opts)
+	p := processor.NewAudioProcessor(setting.Context, opts)
 
 	r.HandleFunc("/audio/upload", func(w http.ResponseWriter, r *http.Request) {
 		dataPtr := r.Context().Value(AudioFileField).(*[]byte)
@@ -42,7 +46,7 @@ func NewAudioRouter(ctx context.Context, maxSize int, storage storage.Storage) *
 			audioBuf := result.Buffer
 			hashString := util.GetMd5String(audioBuf)
 
-			path, err2 := storage.Save(hashString, "audio/mpeg", audioBuf)
+			path, err2 := setting.Storage.Save(hashString, "audio/mpeg", audioBuf)
 			if err2 != nil {
 				util.WriteServerErrorResponse(w, err2)
 				return

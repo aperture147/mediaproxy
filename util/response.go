@@ -48,5 +48,5 @@ func WriteUnauthorizedResponse(w http.ResponseWriter, err error) {
 }
 
 func WriteServerErrorResponse(w http.ResponseWriter, err error) {
-	WriteJsonErrorResponse(w, http.StatusInternalServerError, "internal server error", err)
+	WriteJsonErrorResponse(w, http.StatusInternalServerError, "internal router error", err)
 }

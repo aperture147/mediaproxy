@@ -1,7 +1,9 @@
-package server
+package router
 
 import (
+	"context"
 	"errors"
+	"github.com/aperture147/mediaproxy/storage"
 	"os"
 )
 
@@ -17,4 +19,10 @@ func GetResponse(path string) PathResponse {
 		Path: path,
 		Url:  os.Getenv("HOST") + path,
 	}
+}
+
+type Setting struct {
+	Context context.Context // father context
+	Storage storage.Storage // storage component
+	Path    string          // router path
 }

@@ -1,11 +1,9 @@
-package server
+package router
 
 import (
-	"context"
 	"fmt"
 	"github.com/aperture147/mediaproxy/processor"
-	"github.com/aperture147/mediaproxy/server/middleware"
-	"github.com/aperture147/mediaproxy/storage"
+	"github.com/aperture147/mediaproxy/router/middleware"
 	"github.com/aperture147/mediaproxy/util"
 	"github.com/discord/lilliput"
 	"github.com/gorilla/mux"
@@ -19,16 +17,22 @@ const (
 	ImageDataKey    = "data"
 )
 
+type ImageRouterSetting struct {
+	Setting
+	MaxFileSize     int
+	MaxImageDimSize int
+}
+
 /*
 ctx: golang context
 maxFileSize: max allowed file size
 maxImageSize: max width and height of the image
 storage: storage component, with API helps storing image
 */
-func NewImageRouter(ctx context.Context, maxFileSize, maxImageSize int, storage storage.Storage) *mux.Router {
+func NewImageRouter(setting ImageRouterSetting) *mux.Router {
 	auth := middleware.NewTokenAuthenticator()
-	extractor := middleware.NewFileExtractor(maxFileSize, ImageFileField)
-	decoder := middleware.NewImageDecoder(maxImageSize, ImageFileField, ImageOptionsKey, ImageDataKey)
+	extractor := middleware.NewFileExtractor(setting.MaxFileSize, ImageFileField)
+	decoder := middleware.NewImageDecoder(setting.MaxImageDimSize, ImageFileField, ImageOptionsKey, ImageDataKey)
 
 	r := mux.NewRouter()
 	r.Use(auth.Verify, extractor.Verify, decoder.Decode)
@@ -36,7 +40,7 @@ func NewImageRouter(ctx context.Context, maxFileSize, maxImageSize int, storage 
 	opts := processor.ImageProcessorOptions{
 		MaxImageSize: 1080,
 	}
-	p := processor.NewImageProcessor(ctx, opts)
+	p := processor.NewImageProcessor(setting.Context, opts)
 
 	r.HandleFunc("/image/upload", func(w http.ResponseWriter, r *http.Request) {
 		optsPtr := r.Context().Value(ImageOptionsKey).(*processor.ImageOptions)
@@ -57,7 +61,7 @@ func NewImageRouter(ctx context.Context, maxFileSize, maxImageSize int, storage 
 			}
 			imgBuf := result.Buffer
 			hashString := util.GetMd5String(imgBuf)
-			path, err2 := storage.Save(hashString, "image/"+optsPtr.ImageType, imgBuf)
+			path, err2 := setting.Storage.Save(hashString, "image/"+optsPtr.ImageType, imgBuf)
 			if err2 != nil {
 				util.WriteServerErrorResponse(w, err2)
 				return
