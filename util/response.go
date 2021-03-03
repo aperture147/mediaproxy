@@ -3,7 +3,6 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 )
 
@@ -31,7 +30,6 @@ func WriteOkResponse(w http.ResponseWriter, data interface{}) {
 }
 
 func WriteJsonErrorResponse(w http.ResponseWriter, status int, message string, err error) {
-	log.Println(message, "with reason:", err)
 	WriteJsonResponse(w, status, fmt.Sprint(message), nil)
 }
 

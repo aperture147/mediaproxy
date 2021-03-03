@@ -1,7 +1,6 @@
 package router
 
 import (
-	"fmt"
 	"github.com/aperture147/mediaproxy/processor"
 	"github.com/aperture147/mediaproxy/router/middleware"
 	"github.com/aperture147/mediaproxy/util"
@@ -38,32 +37,32 @@ func NewImageRouter(setting ImageRouterSetting) *mux.Router {
 	r.Use(auth.Verify, extractor.Verify, decoder.Decode)
 
 	opts := processor.ImageProcessorOptions{
-		MaxImageSize: 1080,
+		MaxImageSize: setting.MaxImageDimSize,
 	}
 	p := processor.NewImageProcessor(setting.Context, opts)
 
-	r.HandleFunc("/image/upload", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc(setting.Path, func(w http.ResponseWriter, r *http.Request) {
 		optsPtr := r.Context().Value(ImageOptionsKey).(*processor.ImageOptions)
 		dataPtr := r.Context().Value(ImageDataKey).(*lilliput.Decoder)
 
 		result, err := p.AddImage(dataPtr, optsPtr)
 		if err != nil {
-			util.WriteServerErrorResponse(w, err)
+			ServerErrorResponseAndLog(w, "image add failed", ErrAddToProcessor)
 			return
 		}
 		select {
 		case <-time.After(30 * time.Second):
-			util.WriteServerErrorResponse(w, fmt.Errorf("transformation: %v", ErrTimedOut))
+			ServerErrorResponseAndLog(w, "transform timed out", ErrTimedOut)
 		case <-result.Done():
 			if result.TransformationError != nil {
-				util.WriteServerErrorResponse(w, err)
+				ServerErrorResponseAndLog(w, "transformation failed", result.TransformationError)
 				return
 			}
 			imgBuf := result.Buffer
 			hashString := util.GetMd5String(imgBuf)
 			path, err2 := setting.Storage.Save(hashString, "image/"+optsPtr.ImageType, imgBuf)
 			if err2 != nil {
-				util.WriteServerErrorResponse(w, err2)
+				ServerErrorResponseAndLog(w, "image save failed", err2)
 				return
 			}
 			util.WriteOkResponse(w, GetResponse(path))
